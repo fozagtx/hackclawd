@@ -26,9 +26,11 @@ describe("sandbox network policy", () => {
         "release-assets.githubusercontent.com",
         "gitlab.com",
         "binaries.soliditylang.org",
+        "static.rust-lang.org",
+        "sh.rustup.rs",
       ],
     });
-    expect(DEFAULT_SANDBOX_ALLOWED_DOMAINS).toHaveLength(17);
+    expect(DEFAULT_SANDBOX_ALLOWED_DOMAINS).toHaveLength(19);
   });
 
   it("merges normalized operator domains and removes duplicates", () => {

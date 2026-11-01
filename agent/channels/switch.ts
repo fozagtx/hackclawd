@@ -18,7 +18,8 @@ import {
   statusMessage,
   targetFromMessage,
 } from "../../src/switch/run-status.js";
-import { readRuns, writeRuns } from "../../src/switch/run-store.js";
+import { readRuns, readTargets, writeRuns, writeTargets } from "../../src/switch/run-store.js";
+import { followUpPrompt, TargetMemory } from "../../src/switch/target-memory.js";
 
 type SwitchChannelState = {
   roomId: string | null;
@@ -45,9 +46,16 @@ const switchHttp =
 
 const runs = new RunRegistry();
 const interrupted = new Map<string, RunSnapshot>();
+const targets = new TargetMemory();
 
 function roomOf(address: string): string {
   return address.split(":")[0] ?? address;
+}
+
+function persistTargets(): void {
+  void writeTargets(config.dataDir, targets.all()).catch((error: unknown) => {
+    console.warn(`Could not persist target memory: ${(error as Error).message}`);
+  });
 }
 
 function persistRuns(): void {
@@ -55,6 +63,15 @@ function persistRuns(): void {
     console.warn(`Could not persist run state: ${(error as Error).message}`);
   });
 }
+
+// A follow-up ("find a critical there") names no repository, so the last program audited in
+// each room outlives its run and survives a restart.
+void (async () => {
+  const saved = await readTargets(config.dataDir).catch(() => ({}));
+  for (const [address, target] of Object.entries(saved)) {
+    if (typeof target === "string" && target.trim().length > 0) targets.remember(address, target);
+  }
+})();
 
 // A restart kills the turn but not the conversation: announce what was in flight so the
 // human can resume it without pasting the request again.
@@ -128,13 +145,22 @@ export default defineChannel<SwitchChannelState, { state: SwitchChannelState }>(
       const resuming = Boolean(pending) && /^resume\b/i.test(event.body.trim());
       const body = resuming && pending ? resumePrompt(pending) : event.body;
 
+      const explicitTarget = targetFromMessage(body);
+      const remembered = targets.get(address);
+      const target = explicitTarget ?? pending?.target ?? remembered;
+      const prompt = explicitTarget || resuming ? body : followUpPrompt(remembered, body);
+
       const active = runs.snapshot(address);
       const reply = active ? statusMessage(active, Date.now()) : ACKNOWLEDGEMENT;
       if (!active) {
-        runs.start(address, targetFromMessage(body) ?? pending?.target ?? null, Date.now(), body);
+        runs.start(address, target, Date.now(), body);
         persistRuns();
       }
-      const delivery = await from(address).send(body, {
+      if (target) {
+        targets.remember(address, target);
+        persistTargets();
+      }
+      const delivery = await from(address).send(prompt, {
         auth: null,
         idempotencyKey: event.messageId,
         state: { roomId: event.roomId, threadId: event.threadId },
