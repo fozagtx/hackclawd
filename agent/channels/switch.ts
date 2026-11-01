@@ -2,6 +2,12 @@ import { defineChannel, POST } from "eve/channels";
 import { z } from "zod";
 import { secureValueMatches } from "../../src/api/handlers.js";
 import { config } from "../../src/config.js";
+import {
+  asDeliverableReport,
+  celebrationHeader,
+  reportFileContent,
+  reportFilename,
+} from "../../src/reports/delivery.js";
 import { SwitchHttpClient } from "../../src/switch/http.js";
 import { ACKNOWLEDGEMENT, progressUpdate } from "../../src/switch/progress.js";
 import { RunRegistry, statusMessage, targetFromMessage } from "../../src/switch/run-status.js";
@@ -120,6 +126,27 @@ export default defineChannel<SwitchChannelState, { state: SwitchChannelState }>(
     "turn.settled"(_event, ctx) {
       const address = addressOf(ctx.channel.state);
       if (address) runs.finish(address);
+    },
+    async "call.settled"(event, ctx) {
+      const roomId = ctx.channel.state.roomId;
+      if (!roomId || !switchHttp || event.data.outcome !== "completed") return;
+      const report = asDeliverableReport(event.data.output);
+      if (!report) return;
+      const header = celebrationHeader(report.findings);
+      if (header) await postProgress(roomId, header);
+      try {
+        await switchHttp.postMedia(
+          roomId,
+          {
+            filename: reportFilename(report.program, report.id),
+            mimetype: "text/markdown",
+            data: new TextEncoder().encode(reportFileContent(report.markdown)),
+          },
+          `Full report for ${report.program}. Report ID ${report.id}.`,
+        );
+      } catch (error) {
+        console.warn(`Could not upload report file to Switch: ${(error as Error).message}`);
+      }
     },
     async "content.completed"(event, ctx) {
       if (

@@ -32,6 +32,20 @@ export class SwitchHttpClient {
     });
   }
 
+  async postMedia(
+    roomId: string,
+    file: { filename: string; mimetype: string; data: Uint8Array },
+    caption?: string,
+  ): Promise<void> {
+    const form = new FormData();
+    form.set("file", new Blob([file.data as BlobPart], { type: file.mimetype }), file.filename);
+    if (caption) form.set("caption", caption);
+    await this.request(
+      `/agents/${encodeURIComponent(this.options.agentId)}/rooms/${encodeURIComponent(roomId)}/media`,
+      { method: "POST", body: form },
+    );
+  }
+
   async operation<T = unknown>(operation: string, args: Record<string, unknown>): Promise<T> {
     if (!this.options.connectionId) {
       throw new Error("A Switch connection ID is required for agent operations.");
@@ -53,7 +67,9 @@ export class SwitchHttpClient {
   private async request(path: string, init: RequestInit): Promise<unknown> {
     const headers = new Headers(init.headers);
     headers.set("authorization", `Bearer ${this.options.apiKey}`);
-    headers.set("content-type", "application/json");
+    if (!(init.body instanceof FormData)) {
+      headers.set("content-type", "application/json");
+    }
 
     for (let attempt = 0; attempt < 4; attempt += 1) {
       const response = await this.fetchImpl(new URL(path, this.options.baseUrl).toString(), {
