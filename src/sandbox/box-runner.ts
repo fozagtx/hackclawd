@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { Box, type NetworkPolicy, type Runtime } from "@upstash/box";
 import type { Config } from "../config.js";
 import { buildSandboxNetworkPolicy } from "./network-policy.js";
@@ -87,7 +88,7 @@ export class BoxRunner {
       ? await this.client.get(options.boxId)
       : await this.client.create({
           labels: ["hackclawd"],
-          name: "hackclawd",
+          name: `hackclawd-${randomUUID().slice(0, 8)}`,
           networkPolicy: this.networkPolicy,
           runtime: options.runtime ?? "node",
           keepAlive: options.keepAlive,

@@ -214,4 +214,18 @@ describe("BoxRunner", () => {
       expect.objectContaining({ networkPolicy: buildSandboxNetworkPolicy([]) }),
     );
   });
+
+  it("gives each box a unique name so concurrent runs do not collide", async () => {
+    const client = fakeClient(fakeBox("b1"));
+    const runner = new BoxRunner(client);
+
+    await runner.run({ commands: [] });
+    await runner.run({ commands: [] });
+
+    const create = vi.mocked(client.create);
+    const names = create.mock.calls.map(([options]) => options.name);
+    expect(names[0]).toMatch(/^hackclawd-/);
+    expect(names[0]).not.toBe(names[1]);
+    expect(create).toHaveBeenCalledWith(expect.objectContaining({ labels: ["hackclawd"] }));
+  });
 });
