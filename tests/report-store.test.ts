@@ -42,7 +42,15 @@ describe("report store", () => {
       sessionAddress: "room-1",
       program: "Acme bug bounty",
       markdown: "# Candidate",
-      findings: [{ title: "IDOR", severity: "medium", status: "poc-passed" }],
+      findings: [
+        {
+          title: "IDOR",
+          severity: "medium",
+          status: "poc-passed",
+          pocCommand: "node poc.js",
+          pocOutput: "read order 42 as another user",
+        },
+      ],
     });
     const findingId = report.findings[0]?.id;
     expect(findingId).toBeDefined();

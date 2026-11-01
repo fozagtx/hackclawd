@@ -71,7 +71,15 @@ describe("agent tools", () => {
       {
         program: "Acme",
         markdown: "# Reproduction",
-        findings: [{ title: "IDOR", severity: "high", status: "poc-passed" }],
+        findings: [
+          {
+            title: "IDOR",
+            severity: "high",
+            status: "poc-passed",
+            pocCommand: "node poc.js",
+            pocOutput: "leaked order 42",
+          },
+        ],
       },
       { session: { id: "session-1" } } as never,
     );

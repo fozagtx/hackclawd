@@ -3,11 +3,31 @@ import { mkdir, readdir, readFile, rename, rm, writeFile } from "node:fs/promise
 import { join } from "node:path";
 import { z } from "zod";
 
-const findingInputSchema = z.object({
-  title: z.string().trim().min(1),
-  severity: z.string().trim().min(1),
-  status: z.enum(["candidate", "poc-passed"]).default("candidate"),
-});
+const findingInputSchema = z
+  .object({
+    title: z.string().trim().min(1),
+    severity: z.string().trim().min(1),
+    status: z.enum(["candidate", "poc-passed"]).default("candidate"),
+    pocCommand: z.string().trim().min(1).optional(),
+    pocOutput: z.string().trim().min(1).optional(),
+  })
+  .superRefine((finding, ctx) => {
+    if (finding.status !== "poc-passed") return;
+    if (!finding.pocCommand) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["pocCommand"],
+        message: "A poc-passed finding must quote the sandbox command that proved it.",
+      });
+    }
+    if (!finding.pocOutput) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["pocOutput"],
+        message: "A poc-passed finding must quote the sandbox output that proved it.",
+      });
+    }
+  });
 
 const reportInputSchema = z.object({
   sessionAddress: z.string().min(1),
@@ -27,6 +47,8 @@ const reportSchema = z.object({
       title: z.string(),
       severity: z.string(),
       status: z.enum(["candidate", "poc-passed", "confirmed"]),
+      pocCommand: z.string().optional(),
+      pocOutput: z.string().optional(),
     }),
   ),
   createdAt: z.string().datetime(),
