@@ -18,6 +18,7 @@ export const DEFAULT_SANDBOX_ALLOWED_DOMAINS = [
   "raw.githubusercontent.com",
   "release-assets.githubusercontent.com",
   "gitlab.com",
+  "binaries.soliditylang.org",
 ] as const;
 
 export const SANDBOX_NETWORK_POLICY_DESCRIPTION =

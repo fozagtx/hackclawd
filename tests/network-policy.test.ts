@@ -25,9 +25,10 @@ describe("sandbox network policy", () => {
         "raw.githubusercontent.com",
         "release-assets.githubusercontent.com",
         "gitlab.com",
+        "binaries.soliditylang.org",
       ],
     });
-    expect(DEFAULT_SANDBOX_ALLOWED_DOMAINS).toHaveLength(16);
+    expect(DEFAULT_SANDBOX_ALLOWED_DOMAINS).toHaveLength(17);
   });
 
   it("merges normalized operator domains and removes duplicates", () => {
