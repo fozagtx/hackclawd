@@ -16,6 +16,7 @@ export const DEFAULT_SANDBOX_ALLOWED_DOMAINS = [
   "codeload.github.com",
   "objects.githubusercontent.com",
   "raw.githubusercontent.com",
+  "release-assets.githubusercontent.com",
   "gitlab.com",
 ] as const;
 

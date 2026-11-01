@@ -23,10 +23,11 @@ describe("sandbox network policy", () => {
         "codeload.github.com",
         "objects.githubusercontent.com",
         "raw.githubusercontent.com",
+        "release-assets.githubusercontent.com",
         "gitlab.com",
       ],
     });
-    expect(DEFAULT_SANDBOX_ALLOWED_DOMAINS).toHaveLength(15);
+    expect(DEFAULT_SANDBOX_ALLOWED_DOMAINS).toHaveLength(16);
   });
 
   it("merges normalized operator domains and removes duplicates", () => {
