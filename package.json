@@ -14,7 +14,8 @@
     "test:integration": "vitest run tests/box-runner.integration.test.ts",
     "typecheck": "tsc --noEmit",
     "lint": "biome check .",
-    "switch:register": "node --env-file-if-exists=.env --import tsx scripts/switch-register.ts"
+    "switch:register": "node --env-file-if-exists=.env --import tsx scripts/switch-register.ts",
+    "local": "node --env-file-if-exists=.env --import tsx scripts/local.ts"
   },
   "dependencies": {
     "@ai-sdk/openai-compatible": "^3.0.82",

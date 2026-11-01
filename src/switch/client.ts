@@ -166,7 +166,8 @@ export class SwitchClient {
         let frame: SwitchFrame;
         try {
           frame = parseSwitchFrame(data as Buffer);
-        } catch {
+        } catch (error) {
+          console.error("Switch sent a frame hackclawd could not parse; reconnecting.", error);
           finish("reconnect");
           socket.close();
           return;
@@ -227,7 +228,8 @@ export class SwitchClient {
               await this.persistState();
             }
           })
-          .catch(() => {
+          .catch((error: unknown) => {
+            console.error("Handling a Switch event failed; reconnecting.", error);
             finish("reconnect");
             socket.close();
           });

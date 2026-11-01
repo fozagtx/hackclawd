@@ -40,8 +40,8 @@ const messageEventSchema = z
       .object({
         type: z.literal("message"),
         room_id: z.string().min(1),
-        bridge_id: z.string().optional(),
-        channel_type: z.string().optional(),
+        bridge_id: z.string().nullable().optional(),
+        channel_type: z.string().nullable().optional(),
         sequence: z.number().int().nonnegative(),
         payload: z
           .object({
@@ -101,6 +101,8 @@ export function isSwitchMessageEvent(frame: SwitchFrame): frame is SwitchMessage
   return "event" in frame && frame.event === "message";
 }
 
+const controlEvents = new Set(["connection_state", "ping", "gap", "evicted"]);
+
 export function parseSwitchFrame(raw: string | Buffer | ArrayBuffer): SwitchFrame {
   let value: unknown;
   try {
@@ -118,13 +120,20 @@ export function parseSwitchFrame(raw: string | Buffer | ArrayBuffer): SwitchFram
   if (typeof value !== "object" || value === null) {
     throw new Error("Switch frame must be an object.");
   }
-  const frame = value as Record<string, unknown>;
-  if (frame.type === "connection_state") return connectionStateSchema.parse(value);
-  if (frame.type === "ping") return pingSchema.parse(value);
-  if (frame.type === "gap") return gapSchema.parse(value);
-  if (frame.type === "evicted") return evictedSchema.parse(value);
-  if (frame.event === "message") return messageEventSchema.parse(value);
-  if (typeof frame.event === "string") return domainEventSchema.parse(value);
+  const envelope = value as Record<string, unknown>;
+  const frame =
+    typeof envelope.event === "string" &&
+    controlEvents.has(envelope.event) &&
+    typeof envelope.data === "object" &&
+    envelope.data !== null
+      ? { ...(envelope.data as Record<string, unknown>), type: envelope.event }
+      : envelope;
+  if (frame.type === "connection_state") return connectionStateSchema.parse(frame);
+  if (frame.type === "ping") return pingSchema.parse(frame);
+  if (frame.type === "gap") return gapSchema.parse(frame);
+  if (frame.type === "evicted") return evictedSchema.parse(frame);
+  if (frame.event === "message") return messageEventSchema.parse(frame);
+  if (typeof frame.event === "string") return domainEventSchema.parse(frame);
   if (typeof frame.type === "string") return frame as SwitchFrame;
   throw new Error("Switch frame has no recognized type.");
 }

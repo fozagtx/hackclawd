@@ -1,4 +1,3 @@
-import { randomUUID } from "node:crypto";
 import { z } from "zod";
 
 const registrationSchema = z.object({
@@ -17,7 +16,6 @@ export async function registerSwitchAgent(options: {
   baseUrl: string;
   registrationKey: string;
   overwrite?: boolean;
-  connectionId?: string;
   fetchImpl?: typeof fetch;
 }): Promise<{ id: string; apiKey: string }> {
   const fetchImpl = options.fetchImpl ?? fetch;
@@ -47,25 +45,5 @@ export async function registerSwitchAgent(options: {
     throw new Error(`Switch registration failed with HTTP ${registration.status}.`);
 
   const registered = registrationSchema.parse(await registration.json());
-  const connectionId = options.connectionId ?? randomUUID();
-  const update = await fetchImpl(
-    new URL(
-      `/agents/${encodeURIComponent(registered.id)}/ops/update_agent_detail`,
-      options.baseUrl,
-    ),
-    {
-      method: "POST",
-      headers: {
-        authorization: `Bearer ${registered.api_key}`,
-        "content-type": "application/json",
-        "x-switch-connection-id": connectionId,
-      },
-      body: JSON.stringify({
-        agent_id: registered.id,
-        addressing: "anyone",
-      }),
-    },
-  );
-  if (!update.ok) throw new Error(`Switch addressing update failed with HTTP ${update.status}.`);
   return { id: registered.id, apiKey: registered.api_key };
 }
