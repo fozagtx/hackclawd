@@ -3,10 +3,12 @@ import { z } from "zod";
 import { secureValueMatches } from "../../src/api/handlers.js";
 import { config } from "../../src/config.js";
 import { SwitchHttpClient } from "../../src/switch/http.js";
+import { ACKNOWLEDGEMENT, progressUpdate } from "../../src/switch/progress.js";
 
 type SwitchChannelState = {
   roomId: string | null;
   threadId: string | null;
+  progress: string[];
 };
 
 const eventSchema = z.object({
@@ -26,12 +28,21 @@ const switchHttp =
       })
     : undefined;
 
+async function postProgress(roomId: string | null, content: string): Promise<void> {
+  if (!roomId || !switchHttp) return;
+  try {
+    await switchHttp.postMessage(roomId, content);
+  } catch (error) {
+    console.warn(`Could not post progress to Switch: ${(error as Error).message}`);
+  }
+}
+
 function errorResponse(status: number, code: string, message: string): Response {
   return Response.json({ error: { code, message } }, { status });
 }
 
 export default defineChannel<SwitchChannelState, { state: SwitchChannelState }>({
-  state: { roomId: null, threadId: null },
+  state: { roomId: null, threadId: null, progress: [] },
   context(state) {
     return { state };
   },
@@ -70,8 +81,9 @@ export default defineChannel<SwitchChannelState, { state: SwitchChannelState }>(
       const delivery = await from(address).send(event.body, {
         auth: null,
         idempotencyKey: event.messageId,
-        state: { roomId: event.roomId, threadId: event.threadId },
+        state: { roomId: event.roomId, threadId: event.threadId, progress: [] },
       });
+      await postProgress(event.roomId, ACKNOWLEDGEMENT);
       return Response.json(
         { accepted: true, deliveryId: delivery.deliveryId, sessionId: delivery.sessionId },
         { status: 202 },
@@ -79,6 +91,19 @@ export default defineChannel<SwitchChannelState, { state: SwitchChannelState }>(
     }),
   ],
   events: {
+    "turn.started"(_event, ctx) {
+      ctx.channel.state.progress = [];
+    },
+    async "call.requested"(event, ctx) {
+      const { capability, input } = event.data;
+      const update = progressUpdate(
+        { name: capability.name, kind: capability.kind, input },
+        ctx.channel.state.progress ?? [],
+      );
+      if (!update) return;
+      ctx.channel.state.progress = [...(ctx.channel.state.progress ?? []), update.stage];
+      await postProgress(ctx.channel.state.roomId, update.message);
+    },
     async "content.completed"(event, ctx) {
       if (
         event.data.kind !== "text" ||

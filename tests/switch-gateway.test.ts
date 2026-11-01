@@ -92,7 +92,9 @@ describe("Switch gateway client", () => {
   it("lists existing bridges by type", async () => {
     const fetchImpl = vi.fn();
     loggedIn(fetchImpl);
-    fetchImpl.mockResolvedValueOnce(Response.json([{ bridge_id: "bridge-1", bridge_type: "slack" }]));
+    fetchImpl.mockResolvedValueOnce(
+      Response.json([{ bridge_id: "bridge-1", bridge_type: "slack" }]),
+    );
     const gateway = new SwitchGatewayClient({ baseUrl: "http://switch.local:8000", fetchImpl });
 
     await gateway.login("admin@switch.local", "admin-password");
