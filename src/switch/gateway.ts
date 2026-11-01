@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 const slackCheckSchema = z.object({ workspace_id: z.string().min(1), workspace_name: z.string() });
-const bridgeSchema = z.object({ id: z.string().min(1), type: z.string() });
+const bridgeSchema = z.object({ bridge_id: z.string().min(1), bridge_type: z.string() });
 
 export class SwitchGatewayError extends Error {
   constructor(
@@ -55,7 +55,10 @@ export class SwitchGatewayClient {
   }
 
   async listBridges(): Promise<{ id: string; type: string }[]> {
-    return z.array(bridgeSchema).parse(await this.request("/collaborations", { method: "GET" }));
+    const bridges = z
+      .array(bridgeSchema)
+      .parse(await this.request("/collaborations", { method: "GET" }));
+    return bridges.map((bridge) => ({ id: bridge.bridge_id, type: bridge.bridge_type }));
   }
 
   async connectSlack(tokens: {
@@ -85,7 +88,7 @@ export class SwitchGatewayClient {
         }),
       }),
     );
-    return { id: bridge.id, workspaceName: checked.workspace_name };
+    return { id: bridge.bridge_id, workspaceName: checked.workspace_name };
   }
 
   private url(path: string): string {

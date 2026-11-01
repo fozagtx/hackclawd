@@ -141,11 +141,15 @@ async function main(): Promise<void> {
   if (bridges.some((bridge) => bridge.type === "slack")) {
     console.log("Slack is already connected to Switch.");
   } else if (app.SLACK_BOT_TOKEN && app.SLACK_APP_TOKEN) {
-    const slack = await gateway.connectSlack({
-      botToken: app.SLACK_BOT_TOKEN,
-      appToken: app.SLACK_APP_TOKEN,
-    });
-    console.log(`Connected Slack workspace "${slack.workspaceName}" to Switch.`);
+    try {
+      const slack = await gateway.connectSlack({
+        botToken: app.SLACK_BOT_TOKEN,
+        appToken: app.SLACK_APP_TOKEN,
+      });
+      console.log(`Connected Slack workspace "${slack.workspaceName}" to Switch.`);
+    } catch (error) {
+      console.warn(`Slack is not connected: ${(error as Error).message} hackclawd still starts.`);
+    }
   } else {
     console.warn(
       "Slack is not connected: add SLACK_BOT_TOKEN (xoxb-) and SLACK_APP_TOKEN (xapp-) to .env and run this again.",

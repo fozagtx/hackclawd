@@ -2,8 +2,8 @@
 
 **A Slack bug-bounty agent: paste an authorized program, get back a report with a proof of concept and reproduction steps.**
 
-|  |
-|---|
+|                                                                                                                                                                                                                                                                                                           |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [How it works](#how-it-works) · [Requirements](#requirements) · [Quickstart](#quickstart) · [Slack](#slack) · [HTTP API](#http-api) · [Configuration](#configuration) · [Sandbox](#sandbox) · [Render](#render) · [Data layout](#data-layout) · [Tests](#tests) · [Repository layout](#repository-layout) |
 
 ## How it works
@@ -93,13 +93,13 @@ curl -X POST -H "Authorization: Bearer $API_KEY" http://localhost:3000/api/repor
 
 ## Configuration
 
-| Variable | Purpose |
-|---|---|
-| `NEBIUS_API_KEY` | Required. Nebius model key. |
-| `UPSTASH_BOX_API_KEY` | Runs PoCs in Upstash Box. |
-| `SLACK_BOT_TOKEN`, `SLACK_APP_TOKEN` | Slack tokens `npm run local` hands to Switch. |
-| `HACKCLAWD_API_KEY` | API password. Generated on the first `npm run local`. |
-| `SWITCH_URL`, `SWITCH_AGENT_ID`, `SWITCH_AGENT_API_KEY` | Switch connection. Filled in by `npm run local`. |
+| Variable                                                | Purpose                                               |
+| ------------------------------------------------------- | ----------------------------------------------------- |
+| `NEBIUS_API_KEY`                                        | Required. Nebius model key.                           |
+| `UPSTASH_BOX_API_KEY`                                   | Runs PoCs in Upstash Box.                             |
+| `SLACK_BOT_TOKEN`, `SLACK_APP_TOKEN`                    | Slack tokens `npm run local` hands to Switch.         |
+| `HACKCLAWD_API_KEY`                                     | API password. Generated on the first `npm run local`. |
+| `SWITCH_URL`, `SWITCH_AGENT_ID`, `SWITCH_AGENT_API_KEY` | Switch connection. Filled in by `npm run local`.      |
 
 Optional overrides: `NEBIUS_MODEL` (default `moonshotai/Kimi-K2.7-Code`), `NEBIUS_BASE_URL`, `HACKCLAWD_DATA_DIR` (default `.data`), `HACKCLAWD_SANDBOX_ALLOWED_DOMAINS`, `PORT`.
 

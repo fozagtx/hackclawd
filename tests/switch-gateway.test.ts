@@ -55,7 +55,7 @@ describe("Switch gateway client", () => {
       .mockResolvedValueOnce(
         Response.json({ workspace_id: "T123", workspace_name: "Acme", bot_name: "hackclawd" }),
       )
-      .mockResolvedValueOnce(Response.json({ id: "bridge-1", type: "slack" }));
+      .mockResolvedValueOnce(Response.json({ bridge_id: "bridge-1", bridge_type: "slack" }));
     const gateway = new SwitchGatewayClient({ baseUrl: "http://switch.local:8000", fetchImpl });
 
     await gateway.login("admin@switch.local", "admin-password");
@@ -92,7 +92,7 @@ describe("Switch gateway client", () => {
   it("lists existing bridges by type", async () => {
     const fetchImpl = vi.fn();
     loggedIn(fetchImpl);
-    fetchImpl.mockResolvedValueOnce(Response.json([{ id: "bridge-1", type: "slack" }]));
+    fetchImpl.mockResolvedValueOnce(Response.json([{ bridge_id: "bridge-1", bridge_type: "slack" }]));
     const gateway = new SwitchGatewayClient({ baseUrl: "http://switch.local:8000", fetchImpl });
 
     await gateway.login("admin@switch.local", "admin-password");
