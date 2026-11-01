@@ -1,5 +1,12 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { type BoxClient, type BoxHandle, BoxRunner } from "../src/sandbox/box-runner.js";
+import { parseConfig } from "../src/config.js";
+import {
+  type BoxClient,
+  type BoxHandle,
+  BoxRunner,
+  createBoxRunner,
+} from "../src/sandbox/box-runner.js";
+import { buildSandboxNetworkPolicy } from "../src/sandbox/network-policy.js";
 
 function fakeBox(
   id: string,
@@ -53,7 +60,11 @@ describe("BoxRunner", () => {
     });
 
     expect(client.create).toHaveBeenCalledWith(
-      expect.objectContaining({ labels: ["hackclawd"], runtime: "node" }),
+      expect.objectContaining({
+        labels: ["hackclawd"],
+        runtime: "node",
+        networkPolicy: buildSandboxNetworkPolicy([]),
+      }),
     );
     expect(box.files.write).toHaveBeenCalledWith({
       path: "main.js",
@@ -112,16 +123,61 @@ describe("BoxRunner", () => {
 
   it("returns a reused box id without deleting the box", async () => {
     const box = fakeBox("reused");
-    const client = fakeClient(fakeBox("unused"), box);
+    const client = fakeClient(box);
+    const runner = new BoxRunner(client);
+    const created = await runner.run({ commands: [], keepAlive: true });
 
-    const result = await new BoxRunner(client).run({
+    const result = await runner.run({
       commands: ["echo reusable"],
       boxId: "reused",
     });
 
+    expect(created.boxId).toBe("reused");
+    expect(client.create).toHaveBeenCalledOnce();
     expect(client.get).toHaveBeenCalledWith("reused");
     expect(result.boxId).toBe("reused");
     expect(box.delete).not.toHaveBeenCalled();
+  });
+
+  it("rejects a box id that was not created by this runner", async () => {
+    const client = fakeClient(fakeBox("unexpected"));
+
+    await expect(
+      new BoxRunner(client).run({ commands: ["echo blocked"], boxId: "unmanaged" }),
+    ).rejects.toThrow("Box ID is not managed by this sandbox runner.");
+    expect(client.get).not.toHaveBeenCalled();
+    expect(client.create).not.toHaveBeenCalled();
+  });
+
+  it("does not close a box that was not created by this runner", async () => {
+    const client = fakeClient(fakeBox("unmanaged"));
+
+    await expect(new BoxRunner(client).close("unmanaged")).rejects.toThrow(
+      "Box ID is not managed by this sandbox runner.",
+    );
+    expect(client.get).not.toHaveBeenCalled();
+  });
+
+  it("closes a retained box created by this runner", async () => {
+    const box = fakeBox("retained");
+    const client = fakeClient(box);
+    const runner = new BoxRunner(client);
+
+    await runner.run({ commands: [], keepAlive: true });
+    await runner.close("retained");
+
+    expect(client.get).toHaveBeenCalledOnce();
+    expect(box.delete).toHaveBeenCalledOnce();
+    await expect(runner.run({ commands: [], boxId: "retained" })).rejects.toThrow(
+      "Box ID is not managed by this sandbox runner.",
+    );
+    expect(client.get).toHaveBeenCalledOnce();
+  });
+
+  it("shares the policy-aware runner for repeated calls with one config", () => {
+    const config = parseConfig({});
+
+    expect(createBoxRunner(config)).toBe(createBoxRunner(config));
   });
 
   it("keeps a newly created box alive when requested", async () => {
@@ -144,5 +200,18 @@ describe("BoxRunner", () => {
       new BoxRunner(fakeClient(box)).run({ commands: ["echo failure"] }),
     ).rejects.toThrow("network failed");
     expect(box.delete).toHaveBeenCalledOnce();
+  });
+
+  it("surfaces a create failure without retrying without the network policy", async () => {
+    const client = fakeClient(fakeBox("unused"));
+    vi.mocked(client.create).mockRejectedValueOnce(new Error("network policy rejected"));
+
+    await expect(new BoxRunner(client).run({ commands: ["echo blocked"] })).rejects.toThrow(
+      "network policy rejected",
+    );
+    expect(client.create).toHaveBeenCalledOnce();
+    expect(client.create).toHaveBeenCalledWith(
+      expect.objectContaining({ networkPolicy: buildSandboxNetworkPolicy([]) }),
+    );
   });
 });

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { buildSandboxNetworkPolicy } from "./sandbox/network-policy.js";
 
 const defaultNebiusBaseUrl = "https://api.tokenfactory.nebius.com/v1";
 const defaultNebiusModel = "moonshotai/Kimi-K2.7-Code";
@@ -12,6 +13,22 @@ const optionalUrl = z.preprocess(
   z.string().url().optional(),
 );
 const optionalSecret = optionalString;
+const sandboxDomainList = z.preprocess(
+  (value) => {
+    if (typeof value !== "string" || value.trim() === "") return [];
+    return value.split(",");
+  },
+  z.array(z.string().transform((value) => value.trim())).superRefine((domains, context) => {
+    try {
+      buildSandboxNetworkPolicy(domains);
+    } catch (error) {
+      context.addIssue({
+        code: "custom",
+        message: error instanceof Error ? error.message : "Invalid sandbox allowlist hostname.",
+      });
+    }
+  }),
+);
 
 const envSchema = z.object({
   NEBIUS_API_KEY: optionalSecret,
@@ -23,6 +40,7 @@ const envSchema = z.object({
   SWITCH_AGENT_ID: optionalSecret,
   SWITCH_AGENT_API_KEY: optionalSecret,
   SWITCH_REGISTRATION_KEY: optionalSecret,
+  HACKCLAWD_SANDBOX_ALLOWED_DOMAINS: sandboxDomainList,
   HACKCLAWD_DATA_DIR: optionalString.transform((value) => value ?? ".data"),
   RENDER_EXTERNAL_URL: optionalUrl,
   WORKFLOW_LOCAL_BASE_URL: optionalUrl,
@@ -42,6 +60,7 @@ export type Config = {
   switchAgentId?: string;
   switchAgentApiKey?: string;
   switchRegistrationKey?: string;
+  sandboxAllowedDomains: string[];
   dataDir: string;
   workflowLocalBaseUrl?: string;
   port: number;
@@ -60,6 +79,7 @@ export function parseConfig(source: Record<string, string | undefined>): Config 
     switchAgentId: env.SWITCH_AGENT_ID,
     switchAgentApiKey: env.SWITCH_AGENT_API_KEY,
     switchRegistrationKey: env.SWITCH_REGISTRATION_KEY,
+    sandboxAllowedDomains: env.HACKCLAWD_SANDBOX_ALLOWED_DOMAINS,
     dataDir: env.HACKCLAWD_DATA_DIR,
     workflowLocalBaseUrl: (env.WORKFLOW_LOCAL_BASE_URL ?? env.RENDER_EXTERNAL_URL)?.replace(
       /\/+$/,

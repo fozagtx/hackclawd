@@ -41,6 +41,24 @@ Copy `.env.example` to `.env` for local development. Values are read centrally b
 
 `SWITCH_URL`, `SWITCH_AGENT_ID`, and `SWITCH_AGENT_API_KEY` must be configured together. The bridge also requires `HACKCLAWD_API_KEY`. Without Switch configured, the service starts without attempting a Switch connection.
 
+## Sandbox safety
+
+Every new Box uses a custom egress policy. The default allowlist is:
+
+- `registry.npmjs.org`, `registry.yarnpkg.com`, `pypi.org`, `files.pythonhosted.org`
+- `proxy.golang.org`, `sum.golang.org`
+- `crates.io`, `index.crates.io`, `static.crates.io`
+- `rubygems.org`
+- `github.com`, `codeload.github.com`, `objects.githubusercontent.com`,
+  `raw.githubusercontent.com`, `gitlab.com`
+
+Set `HACKCLAWD_SANDBOX_ALLOWED_DOMAINS` only as an operator to add comma-separated
+bare hostnames, such as a private Git host. Leave it unset to use only the defaults.
+It is intentionally omitted from `render.yaml`; configure it only when an operator
+has reviewed the additional destinations. The model cannot change the allowlist.
+Run proof-of-concept code against local copies in the sandbox; live targets are
+unreachable from Box network egress.
+
 ## Local setup
 
 1. Install Node.js 24+, then install dependencies:

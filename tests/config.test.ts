@@ -39,13 +39,34 @@ describe("parseConfig", () => {
         RENDER_EXTERNAL_URL: "",
         WORKFLOW_LOCAL_BASE_URL: "",
         PORT: "",
+        HACKCLAWD_SANDBOX_ALLOWED_DOMAINS: "",
       }),
     ).toMatchObject({
       nebiusBaseUrl: "https://api.tokenfactory.nebius.com/v1",
       nebiusModel: "moonshotai/Kimi-K2.7-Code",
       dataDir: ".data",
       port: 3000,
+      sandboxAllowedDomains: [],
     });
+  });
+
+  it("parses operator-provided sandbox hostnames", () => {
+    expect(
+      parseConfig({
+        HACKCLAWD_SANDBOX_ALLOWED_DOMAINS: " Git.Example,mirror.internal ",
+      }).sandboxAllowedDomains,
+    ).toEqual(["Git.Example", "mirror.internal"]);
+  });
+
+  it.each([
+    "https://git.example",
+    "git.example/path",
+    "*.example.com",
+    "*",
+    "192.168.1.10",
+    "2001:db8::1",
+  ])("rejects invalid sandbox allowlist value %s", (value) => {
+    expect(() => parseConfig({ HACKCLAWD_SANDBOX_ALLOWED_DOMAINS: value })).toThrow();
   });
 
   it("uses the Render public origin as eve's workflow callback base", () => {

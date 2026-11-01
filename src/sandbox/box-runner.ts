@@ -1,5 +1,6 @@
-import { Box, type Runtime } from "@upstash/box";
+import { Box, type NetworkPolicy, type Runtime } from "@upstash/box";
 import type { Config } from "../config.js";
+import { buildSandboxNetworkPolicy } from "./network-policy.js";
 
 const outputLimit = 16 * 1024;
 const truncationMarker = "\n...[truncated]";
@@ -25,6 +26,7 @@ export type BoxClient = {
   create(options: {
     labels: string[];
     name: string;
+    networkPolicy: NetworkPolicy;
     runtime?: Runtime;
     keepAlive?: boolean;
     timeout?: number;
@@ -69,19 +71,29 @@ function withTimeout(command: string, timeoutMs?: number): string {
 }
 
 export class BoxRunner {
-  constructor(private readonly client: BoxClient) {}
+  private readonly managedBoxIds = new Set<string>();
+
+  constructor(
+    private readonly client: BoxClient,
+    private readonly networkPolicy: NetworkPolicy = buildSandboxNetworkPolicy([]),
+  ) {}
 
   async run(options: BoxRunOptions): Promise<BoxRunResult> {
     const reused = Boolean(options.boxId);
+    if (options.boxId && !this.managedBoxIds.has(options.boxId)) {
+      throw new Error("Box ID is not managed by this sandbox runner.");
+    }
     const box = options.boxId
       ? await this.client.get(options.boxId)
       : await this.client.create({
           labels: ["hackclawd"],
           name: "hackclawd",
+          networkPolicy: this.networkPolicy,
           runtime: options.runtime ?? "node",
           keepAlive: options.keepAlive,
           timeout: options.timeoutMs,
         });
+    if (!reused) this.managedBoxIds.add(box.id);
     const keepBox = reused || Boolean(options.keepAlive);
     const results: BoxRunResult["results"] = [];
 
@@ -104,17 +116,29 @@ export class BoxRunner {
 
       return { boxId: keepBox ? box.id : null, results };
     } finally {
-      if (!keepBox) await box.delete();
+      if (!keepBox) {
+        await box.delete();
+        this.managedBoxIds.delete(box.id);
+      }
     }
   }
 
   async close(boxId: string): Promise<void> {
+    if (!this.managedBoxIds.has(boxId)) {
+      throw new Error("Box ID is not managed by this sandbox runner.");
+    }
     const box = await this.client.get(boxId);
     await box.delete();
+    this.managedBoxIds.delete(boxId);
   }
 }
 
+const runnersByConfig = new WeakMap<Config, BoxRunner>();
+
 export function createBoxRunner(config: Config): BoxRunner {
+  const existingRunner = runnersByConfig.get(config);
+  if (existingRunner) return existingRunner;
+
   const client: BoxClient = {
     create: async (options) => {
       if (!config.upstashBoxApiKey) {
@@ -137,5 +161,7 @@ export function createBoxRunner(config: Config): BoxRunner {
     },
   };
 
-  return new BoxRunner(client);
+  const runner = new BoxRunner(client, buildSandboxNetworkPolicy(config.sandboxAllowedDomains));
+  runnersByConfig.set(config, runner);
+  return runner;
 }

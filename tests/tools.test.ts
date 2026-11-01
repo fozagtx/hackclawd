@@ -7,6 +7,8 @@ import { createSandboxRunTool } from "../agent/tools/sandbox_run.js";
 import { createSubmitReportTool } from "../agent/tools/submit_report.js";
 import { parseConfig } from "../src/config.js";
 import { createReportStore } from "../src/reports/store.js";
+import type { BoxRunner } from "../src/sandbox/box-runner.js";
+import { SANDBOX_NETWORK_POLICY_DESCRIPTION } from "../src/sandbox/network-policy.js";
 
 describe("agent tools", () => {
   let dataDir: string;
@@ -26,6 +28,27 @@ describe("agent tools", () => {
 
     expect(result).toMatchObject({
       error: "UPSTASH_BOX_API_KEY is not configured.",
+      networkPolicy: SANDBOX_NETWORK_POLICY_DESCRIPTION,
+    });
+  });
+
+  it("describes the network restriction and returns it with sandbox results", async () => {
+    const runner = {
+      run: async () => ({ boxId: null, results: [] }),
+    } as unknown as BoxRunner;
+    const tool = createSandboxRunTool(
+      parseConfig({ UPSTASH_BOX_API_KEY: "test-key", HACKCLAWD_DATA_DIR: dataDir }),
+      runner,
+    );
+    if (!tool.execute) throw new Error("sandbox_run tool does not expose execute.");
+
+    expect(tool.description).toContain(SANDBOX_NETWORK_POLICY_DESCRIPTION);
+    const result = await tool.execute({ commands: ["echo local"] }, {} as never);
+
+    expect(result).toMatchObject({
+      boxId: null,
+      results: [],
+      networkPolicy: SANDBOX_NETWORK_POLICY_DESCRIPTION,
     });
   });
 
