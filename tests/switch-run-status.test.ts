@@ -28,7 +28,7 @@ describe("formatElapsed", () => {
 
 describe("statusMessage", () => {
   it("says it has only just started when no stage has happened", () => {
-    const text = statusMessage({ target: "a/b", startedAt: 0, stages: [] }, 20_000);
+    const text = statusMessage({ target: "a/b", startedAt: 0, stages: [], request: "go" }, 20_000);
     expect(text).toContain("20s");
     expect(text).toContain("a/b");
     expect(text).not.toContain("On it. I'll post progress here as I work.");
@@ -36,7 +36,7 @@ describe("statusMessage", () => {
 
   it("names the current stage and the stages already done", () => {
     const text = statusMessage(
-      { target: "a/b", startedAt: 0, stages: ["recon", "hunt", "sandbox"] },
+      { target: "a/b", startedAt: 0, stages: ["recon", "hunt", "sandbox"], request: "go" },
       5 * 60_000,
     );
     expect(text).toContain("5m");
@@ -52,16 +52,21 @@ describe("RunRegistry", () => {
 
   it("tracks a run from start through stages to finish", () => {
     const runs = new RunRegistry();
-    runs.start("room", "a/b", 1_000);
+    runs.start("room", "a/b", 1_000, "Audit a/b");
     runs.recordStage("room", "recon");
-    expect(runs.snapshot("room")).toEqual({ target: "a/b", startedAt: 1_000, stages: ["recon"] });
+    expect(runs.snapshot("room")).toEqual({
+      target: "a/b",
+      startedAt: 1_000,
+      stages: ["recon"],
+      request: "Audit a/b",
+    });
     runs.finish("room");
     expect(runs.snapshot("room")).toBeNull();
   });
 
   it("keeps runs in different rooms apart", () => {
     const runs = new RunRegistry();
-    runs.start("a", "x/y", 0);
+    runs.start("a", "x/y", 0, "go");
     runs.recordStage("a", "hunt");
     expect(runs.snapshot("b")).toBeNull();
     expect(runs.snapshot("a")?.stages).toEqual(["hunt"]);

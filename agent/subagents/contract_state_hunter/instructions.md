@@ -31,3 +31,18 @@ A compact list. For each candidate:
 - the concrete next test that would prove it
 
 If you find nothing, say so plainly and list the files and lenses you covered. An honest empty result is correct and expected; never invent a finding to fill the list.
+
+## Running Solidity code
+
+### Solidity PoCs: install Foundry first
+
+Foundry is **not** preinstalled in the sandbox. Install it before any `forge` command, and never claim a build or test ran until you have the output:
+
+```sh
+curl -fsSL -o /tmp/foundryup https://raw.githubusercontent.com/foundry-rs/foundry/master/foundryup/foundryup
+bash /tmp/foundryup
+export PATH="$HOME/.foundry/bin:$PATH"
+forge --version
+```
+
+`solc` downloads itself on the first compile. Export the `PATH` line again in every later command, because each command runs in a fresh shell. Verified working in the sandbox: `forge 1.8.7`, solc auto-installed, `forge test` reports `[PASS]`.
