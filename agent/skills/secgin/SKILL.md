@@ -31,15 +31,15 @@ Clone the in-scope repo into the sandbox and read it. Produce three passes:
 
 Pick the surface: `web2`, `web3` (Solidity), or `ai` (agent/LLM app). A repo can have more than one.
 
-## 3. Hunt (sequential specialist passes)
+## 3. Hunt (delegate to specialist subagents)
 
-Run one pass per lens for the chosen surface (see `references/lenses.md`). Each later pass receives earlier candidates and must look elsewhere, not re-file them. For each invariant, trust boundary, and entry point the lens touches, ask: is there a path through this code that breaks it? Follow data past the first function; attack error/fallback/timeout paths; probe empty/max/first/last/zero; invert call order; look for two parsers that disagree; name the missing or misplaced check. Check invariants spanning more than one file.
+Delegate the lenses to the specialist subagents rather than running every pass yourself: `web2_hunter`, `contract_state_hunter`, `contract_math_hunter`, `contract_flow_hunter` and `ai_hunter`. Dispatch only the surfaces in scope, at most three at a time, and give each one the sandbox box ID, the repo path, the recon notes, and the candidates already filed. Run a lens yourself only when no specialist covers it (see `references/lenses.md`). Each later pass receives earlier candidates and must look elsewhere, not re-file them. For each invariant, trust boundary, and entry point the lens touches, ask: is there a path through this code that breaks it? Follow data past the first function; attack error/fallback/timeout paths; probe empty/max/first/last/zero; invert call order; look for two parsers that disagree; name the missing or misplaced check. Check invariants spanning more than one file.
 
 Use the impact ladder in `references/impact.md`. Stay at medium and above unless source proves a real low.
 
 ## 4. Validate (independent skeptic)
 
-Re-read each candidate as a skeptic who wants to reject it. Reject if: the path is unreachable, a guard elsewhere blocks it, the attacker needs privileges the program excludes, impact is unnamed, or evidence lines do not say what the finding claims. Keep a short rejection reason for each dropped candidate.
+Hand the combined candidate list to the `validator` subagent, with the box ID and repo path. It re-reads the cited lines and returns keep/reject verdicts plus a merged survivor list; keep its rejection reasons for the report. Re-read each candidate as a skeptic who wants to reject it. Reject if: the path is unreachable, a guard elsewhere blocks it, the attacker needs privileges the program excludes, impact is unnamed, or evidence lines do not say what the finding claims. Keep a short rejection reason for each dropped candidate.
 
 ## 5. Gapfill and dedup
 
