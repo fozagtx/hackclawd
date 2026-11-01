@@ -4,6 +4,7 @@ import { secureValueMatches } from "../../src/api/handlers.js";
 import { config } from "../../src/config.js";
 import { SwitchHttpClient } from "../../src/switch/http.js";
 import { ACKNOWLEDGEMENT, progressUpdate } from "../../src/switch/progress.js";
+import { RunRegistry, statusMessage, targetFromMessage } from "../../src/switch/run-status.js";
 
 type SwitchChannelState = {
   roomId: string | null;
@@ -27,6 +28,13 @@ const switchHttp =
         apiKey: config.switchAgentApiKey,
       })
     : undefined;
+
+const runs = new RunRegistry();
+
+function addressOf(state: SwitchChannelState): string | null {
+  if (!state.roomId) return null;
+  return state.threadId ? `${state.roomId}:${state.threadId}` : state.roomId;
+}
 
 async function postProgress(roomId: string | null, content: string): Promise<void> {
   if (!roomId || !switchHttp) return;
@@ -78,12 +86,15 @@ export default defineChannel<SwitchChannelState, { state: SwitchChannelState }>(
       }
       const event = parsed.data;
       const address = event.threadId ? `${event.roomId}:${event.threadId}` : event.roomId;
+      const active = runs.snapshot(address);
+      const reply = active ? statusMessage(active, Date.now()) : ACKNOWLEDGEMENT;
+      if (!active) runs.start(address, targetFromMessage(event.body), Date.now());
       const delivery = await from(address).send(event.body, {
         auth: null,
         idempotencyKey: event.messageId,
-        state: { roomId: event.roomId, threadId: event.threadId, progress: [] },
+        state: { roomId: event.roomId, threadId: event.threadId },
       });
-      await postProgress(event.roomId, ACKNOWLEDGEMENT);
+      await postProgress(event.roomId, reply);
       return Response.json(
         { accepted: true, deliveryId: delivery.deliveryId, sessionId: delivery.sessionId },
         { status: 202 },
@@ -102,7 +113,13 @@ export default defineChannel<SwitchChannelState, { state: SwitchChannelState }>(
       );
       if (!update) return;
       ctx.channel.state.progress = [...(ctx.channel.state.progress ?? []), update.stage];
+      const address = addressOf(ctx.channel.state);
+      if (address) runs.recordStage(address, update.stage);
       await postProgress(ctx.channel.state.roomId, update.message);
+    },
+    "turn.settled"(_event, ctx) {
+      const address = addressOf(ctx.channel.state);
+      if (address) runs.finish(address);
     },
     async "content.completed"(event, ctx) {
       if (
