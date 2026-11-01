@@ -1,0 +1,29 @@
+services:
+  - type: web
+    name: hackclawd
+    runtime: node
+    plan: starter
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    disk:
+      name: hackclawd-data
+      mountPath: /var/data
+      sizeGB: 1
+    envVars:
+      - key: NODE_VERSION
+        value: "24"
+      - key: HACKCLAWD_DATA_DIR
+        value: /var/data
+      - key: NEBIUS_API_KEY
+        sync: false
+      - key: UPSTASH_BOX_API_KEY
+        sync: false
+      - key: HACKCLAWD_API_KEY
+        sync: false
+      - key: SWITCH_URL
+        sync: false
+      - key: SWITCH_AGENT_ID
+        sync: false
+      - key: SWITCH_AGENT_API_KEY
+        sync: false

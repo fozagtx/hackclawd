@@ -1,0 +1,95 @@
+import { defineChannel, POST } from "eve/channels";
+import { z } from "zod";
+import { secureValueMatches } from "../../src/api/handlers.js";
+import { config } from "../../src/config.js";
+import { SwitchHttpClient } from "../../src/switch/http.js";
+
+type SwitchChannelState = {
+  roomId: string | null;
+  threadId: string | null;
+};
+
+const eventSchema = z.object({
+  roomId: z.string().min(1),
+  threadId: z.string().nullable(),
+  messageId: z.string().min(1),
+  senderName: z.string().min(1),
+  body: z.string().min(1),
+});
+
+const switchHttp =
+  config.switchUrl && config.switchAgentId && config.switchAgentApiKey
+    ? new SwitchHttpClient({
+        baseUrl: config.switchUrl,
+        agentId: config.switchAgentId,
+        apiKey: config.switchAgentApiKey,
+      })
+    : undefined;
+
+function errorResponse(status: number, code: string, message: string): Response {
+  return Response.json({ error: { code, message } }, { status });
+}
+
+export default defineChannel<SwitchChannelState, { state: SwitchChannelState }>({
+  state: { roomId: null, threadId: null },
+  context(state) {
+    return { state };
+  },
+  routes: [
+    POST("/switch/events", async (request, { from }) => {
+      if (!config.hackclawdApiKey) {
+        return errorResponse(503, "not_configured", "HACKCLAWD_API_KEY is not configured.");
+      }
+      const bridgeSecret = request.headers.get("x-hackclawd-bridge-secret");
+      if (!bridgeSecret || !secureValueMatches(bridgeSecret, config.hackclawdApiKey)) {
+        return errorResponse(401, "unauthorized", "A valid bridge secret is required.");
+      }
+      if (request.headers.get("content-type")?.split(";")[0]?.trim() !== "application/json") {
+        return errorResponse(
+          415,
+          "unsupported_media_type",
+          "Content-Type must be application/json.",
+        );
+      }
+      let input: unknown;
+      try {
+        input = await request.json();
+      } catch {
+        return errorResponse(400, "invalid_json", "Request body must be valid JSON.");
+      }
+      const parsed = eventSchema.safeParse(input);
+      if (!parsed.success) {
+        return errorResponse(
+          400,
+          "invalid_request",
+          "Switch event is missing required message fields.",
+        );
+      }
+      const event = parsed.data;
+      const address = event.threadId ? `${event.roomId}:${event.threadId}` : event.roomId;
+      const delivery = await from(address).send(event.body, {
+        auth: null,
+        idempotencyKey: event.messageId,
+        state: { roomId: event.roomId, threadId: event.threadId },
+      });
+      return Response.json(
+        { accepted: true, deliveryId: delivery.deliveryId, sessionId: delivery.sessionId },
+        { status: 202 },
+      );
+    }),
+  ],
+  events: {
+    async "content.completed"(event, ctx) {
+      if (
+        event.data.kind !== "text" ||
+        typeof event.data.value !== "string" ||
+        !event.data.value.trim()
+      ) {
+        return;
+      }
+      const roomId = ctx.channel.state.roomId;
+      if (!roomId || !switchHttp) return;
+      await switchHttp.postMessage(roomId, event.data.value);
+    },
+  },
+});

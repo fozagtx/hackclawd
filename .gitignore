@@ -1,0 +1,7 @@
+node_modules/
+.output/
+.eve/
+.data/
+.env*
+!.env.example
+*.tsbuildinfo
