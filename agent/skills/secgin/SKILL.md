@@ -16,6 +16,8 @@ Pipeline: `scope -> recon -> hunt (sequential passes x lens) -> validate -> gapf
 4. **No fabrication.** Every claim cites exact file paths and lines you actually read. Never say a tool ran or a PoC passed unless the sandbox output shows it. Quote the output.
 5. **Confirmed stays zero.** Statuses are `candidate` (model believes it), `poc-passed` (sandbox reproduced it), and `confirmed` (a human reproduced it and said so). Only a human moves a finding to `confirmed`. `submit_report` rejects a `poc-passed` finding unless you pass `pocCommand` and `pocOutput` quoted from the sandbox run, so never mark one from reasoning alone.
 6. **Impact before filing.** A finding states attacker, intent broken, trust boundary, and impact (victim, loss, blast radius). No named loss, no finding. Defense-in-depth gaps behind a working control, style, gas, and "user can do what their role allows" are not findings.
+7. **Full paths, always.** Reference every tool, subagent, and output location by absolute path. An agent that cannot resolve a tool assumes it is missing and silently skips the step or improvises its own, which quietly loses methodology coverage.
+8. **Keep output out of the skill folder.** Write findings, logs, and artifacts to a dedicated per-run working directory in the sandbox, never under `agent/skills/`. A bloated skill folder degrades the agent.
 
 ## 1. Scope
 
@@ -35,11 +37,15 @@ Pick the surface: `web2`, `web3` (Solidity), or `ai` (agent/LLM app). A repo can
 
 Delegate the lenses to the specialist subagents rather than running every pass yourself: `web2_hunter`, `contract_state_hunter`, `contract_math_hunter`, `contract_flow_hunter` and `ai_hunter`. Dispatch only the surfaces in scope, at most three at a time, and give each one the sandbox box ID, the repo path, the recon notes, and the candidates already filed. Run a lens yourself only when no specialist covers it (see `references/lenses.md`). Each later pass receives earlier candidates and must look elsewhere, not re-file them. For each invariant, trust boundary, and entry point the lens touches, ask: is there a path through this code that breaks it? Follow data past the first function; attack error/fallback/timeout paths; probe empty/max/first/last/zero; invert call order; look for two parsers that disagree; name the missing or misplaced check. Check invariants spanning more than one file.
 
+Verify each dispatched hunter actually returned candidates or an explicit "nothing found". Harness fan-out passes through an aggressive safety classifier that can silently block offensive tool calls, so a hunter can fail quietly and look like clean coverage: treat a silent or empty hunter as missing coverage, re-run it, and never report it as a clean result.
+
+Models default to techniques over-represented in training data (for example legacy AWS IMDS SSRF), which are often outdated. For each class, prefer the current primary target named in `references/lenses.md` over the first idea the model reaches for.
 Use the impact ladder in `references/impact.md`. Stay at medium and above unless source proves a real low.
 
 ## 4. Validate (independent skeptic)
 
 Hand the combined candidate list to the `validator` subagent, with the box ID and repo path. It re-reads the cited lines and returns keep/reject verdicts plus a merged survivor list; keep its rejection reasons for the report. Re-read each candidate as a skeptic who wants to reject it. Reject if: the path is unreachable, a guard elsewhere blocks it, the attacker needs privileges the program excludes, impact is unnamed, or evidence lines do not say what the finding claims. Keep a short rejection reason for each dropped candidate.
+Assume the model over-rated severity: re-rank every survivor down the impact ladder unless the sandbox proof forces the higher rating. An independent reviewer that only tries to reject (ideally a different model from the finder) is more reliable than the finder's own confidence.
 
 ## 5. Gapfill and dedup
 
@@ -70,3 +76,7 @@ Use the format in `references/report.md`. One clause titles (twelve words or few
 ## Progress
 
 Post a short progress line to the human at each stage change (scope, recon done, each lens done with candidate count, validation result, PoC result, report ready).
+
+## Maintaining this skill
+
+When a new model generation ships, retune before trusting the old prompt. Run the model in the harness's safe mode (no identity file, no skills) against a known target with a bare instruction, and watch what it now does unaided. If it reliably performs a step this skill spells out, delete that step so the skill stays lean and leans on the model's own ability; keep only the domain knowledge the model still lacks.

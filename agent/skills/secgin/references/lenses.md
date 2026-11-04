@@ -6,7 +6,7 @@ Run one sequential pass per lens for each surface in scope. Each later pass rece
 
 ### identity-and-tenancy
 
-Trace authentication, sessions, OAuth, password reset, object authorization, tenant isolation and role transitions. Compare owner and non-owner paths, including caches and asynchronous jobs. Attack class: broken access control / IDOR / confused deputy. Name the actor, the object they should not reach, and the check that is missing or inverted.
+Trace authentication, sessions, OAuth, password reset, object authorization, tenant isolation and role transitions. Compare owner and non-owner paths, including caches and asynchronous jobs. Attack class: broken access control / IDOR / confused deputy. Name the actor, the object they should not reach, and the check that is missing or inverted. Test API calls observed before an IDP redirect (an SPA that flashes then redirects to Okta/OneLogin) without authentication, since many apps treat the IDP as the only auth and add none per API call. On password-reset and login, brute-force common parameter names and watch for a hidden admin set-password page (no username field) distinct from the user forgot-password flow.
 
 ### input-to-sink
 
@@ -14,7 +14,7 @@ Trace untrusted input through validation, encoding and canonicalization into SQL
 
 ### network-and-protocol
 
-Check outbound URL construction, SSRF boundaries, redirects, proxy trust, request parsing, cache keys, CORS and websocket authorization. Distinguish source evidence from deployment assumptions. Attack class: SSRF, request smuggling, cache poisoning, CSRF. Require a trust-boundary crossing in source, not a hostname string alone.
+Check outbound URL construction, SSRF boundaries, redirects, proxy trust, request parsing, cache keys, CORS and websocket authorization. Distinguish source evidence from deployment assumptions. Attack class: SSRF, request smuggling, cache poisoning, CSRF. Require a trust-boundary crossing in source, not a hostname string alone. For SSRF, split identification from post-exploitation: once a fetch target is attacker-controlled, the primary target is localhost-bound admin panels and control planes (enumerate high ports; e.g. an unauthenticated Envoy or Kubernetes admin with a config-dump), not only cloud metadata (IMDS now needs a header and is over-represented in training data).
 
 ### state-and-business-logic
 
