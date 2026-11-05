@@ -329,7 +329,7 @@ These are the answers we paste into the "What did you like about Switch, and wha
 - [ ] Team details filled in on the form for everyone on the team, up to 4 people.
 - [ ] Tracks confirmed on the form: Track 01, plus side tracks if applicable.
 - [ ] Wispr Usage Card uploaded under Track Details if entering Code with Wispr.
-- [ ] Repository is public at https://github.com/fozagtx/hackclawd and this README is committed.
+- [x] Repository is public at https://github.com/fozagtx/hackclawd and this README is committed.
 - [ ] `npm test`, `npm run typecheck`, `npm run lint`, and `npm run build` pass.
 
 ## Repository layout
