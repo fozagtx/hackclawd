@@ -2,88 +2,11 @@
 
 A security research agent that lives in a Switch room. Paste an authorized bug-bounty program into Slack and get back a report with sandboxed proofs of concept and reproduction steps, in the same conversation.
 
-Built for the [Flip the Switch Hackathon](https://www.wemakedevs.org/hackathons/switch) (4 to 7 November 2026). Switch is not decoration here: without it the agent is a terminal-only tool, and with it the whole audit runs inside a Slack channel where the team can watch, ask, and decide.
+Built for the Flip the Switch Hackathon (4 to 7 November 2026), entered in Track 01, Best Business Workflow. Switch is not decoration here: without it the agent is a terminal-only tool, and with it the whole audit runs inside a Slack channel where the team can watch, ask, and decide.
 
-## Start here
-
-Reviewers, these are the links and the answers you need first.
-
-| Item | Link |
-| --- | --- |
-| Project repository (public) | https://github.com/fozagtx/hackclawd |
-| Demo video | TODO: add the YouTube or Loom link before submitting. Keep it under 3 minutes, public or unlisted, showing the agent working in a real chat with teammates |
-| Live demo | None. Run it locally with `npm run local`, see [How to run it](#how-to-run-it) |
-| Blog post (Best Blog side track, optional) | TODO: add the link if you publish one |
-| Wispr Usage Card (Code with Wispr side track) | TODO: upload a screenshot from Insights in the Wispr Flow desktop app under Track Details |
-| Hackathon page | https://www.wemakedevs.org/hackathons/switch |
-| Switch documentation | https://docs.switchagents.ai/ |
-| Switch source | https://github.com/sandbox-quantum/switch |
-
-Jump straight to an answer:
-
-- [What problem does it solve, and who is it for?](#the-problem)
-- [Which tracks are we submitting for?](#tracks)
-- [How did we use Switch?](#how-we-used-switch)
-- [How is the channel set up?](#how-the-channel-is-set-up)
-- [What real work does it do?](#the-workflow)
-- [How do we run it?](#how-to-run-it)
-- [What does every .env.example variable do?](#configuration-reference)
-- [What did we like, and what would we improve?](#what-we-liked-and-what-we-would-improve)
-
-> [!NOTE]
-> The three TODO rows are the only pieces that do not live in the repository. Fill them in before you submit. Everything described below is implemented and covered by the test suite.
-
-## Submission answers
-
-Short, copy-pasteable answers to the seven required fields on the submission form. Longer versions are linked.
-
-**Project title:** hackclawd
-
-**Tracks:** Track 01, Best Business Workflow. Also eligible for the Best Blog and Code with Wispr side tracks once the blog post and the Wispr Usage Card are added. Track 03, Best Core Contribution, does not apply, because this is a standalone project rather than a pull request to Switch core. See [Tracks](#tracks).
-
-**Project description (what problem, who for):** Security teams and bug-bounty hunters have to triage an authorized program quickly, but the useful work happens in a terminal only one person can drive, and the findings end up in a document nobody saw being written. hackclawd puts the research agent in the team's Slack room through Switch. A human posts a program, scope, and authorization, the agent hunts and proves findings in a locked-down sandbox, the report lands back in the same conversation, and a human confirms the findings. See [The problem](#the-problem).
-
-**GitHub Repository:** https://github.com/fozagtx/hackclawd (public, README included, setup in [How to run it](#how-to-run-it))
-
-**Demo video:** TODO, under 3 minutes on YouTube or Loom, public or unlisted, showing the agent working in a real chat with teammates.
-
-**Live demo or deployment:** None yet. `render.yaml` is a deployment blueprint, but the demo runs locally with `npm run local`. See [Render deployment](#render-deployment).
-
-**How did we use Switch in the project?** We connected an Eve agent (something else, not Claude Code, Codex, LangChain, or Google ADK) to Slack through a self-hosted Switch server. One durable agent session serves each room and thread, and only addressed mentions wake it. The agent runs security audits, posts progress into the room, and uploads the full Markdown report as a file. Teammates @mention it, ask follow-ups mid-run, resume interrupted audits, and confirm findings through the HTTP API. See [How we used Switch](#how-we-used-switch).
-
-**What did we like about Switch, and what would we improve?** Rooms plus the addressed filter plus a resumable cursor made long unattended runs possible, and posting text and files needed no Slack SDK. We would like a typed client SDK for the frame protocol, a CLI for credential rotation, a scoped setup token instead of an admin cookie, a lighter local dev stack, and native card actions so a human can confirm a finding inside the room. See [What we liked and what we would improve](#what-we-liked-and-what-we-would-improve).
-
-## The problem
-
-Security research is slow to share. A researcher clones a repo, runs tools locally, and pastes results into a ticket. Teammates cannot see the work in progress, cannot redirect it, and cannot tell which findings were actually proven. The person driving the terminal becomes a bottleneck.
-
-hackclawd moves that loop into the chat the team already uses:
-
-- **Who it is for:** enterprise security teams, AppSec engineers, and bug-bounty hunters working on assets they are authorized to test.
-- **What it solves:** it turns an authorized program into a visible, auditable workflow with evidence, instead of a private terminal session and a static document.
-- **Who stays in charge:** a human. The agent never marks a finding confirmed, only a person does that through the HTTP API.
-
-## What it is
-
-| Part | Role | Required |
-| --- | --- | --- |
-| Human in Slack | Posts the program, scope, and authorization, asks follow-ups, confirms findings | Yes |
-| Switch server and Slack bridge | Turns a Slack channel into a room, routes addressed messages, carries replies and files | Yes |
-| hackclawd Eve agent | One durable session per room and thread, owns recon, dispatch, and the final report | Yes |
-| `secgin` skill and six subagents | Recon, specialist hunts, skeptical validation | Yes |
-| Upstash Box sandbox | Runs proofs of concept against local copies with egress restricted | Yes for PoCs, optional for a read-only audit |
-| HTTP API | Start an audit, list reports, confirm a finding | Optional |
-
-The agent is defined in `agent/agent.ts` with the `eve` framework, its behavior in `agent/instructions.md`, and the security workflow in `agent/skills/secgin/`. The model is a Nebius Token Factory model, `moonshotai/Kimi-K2.7-Code` by default, reached through the Vercel AI SDK (`ai` and `@ai-sdk/openai-compatible`).
-
-## Tracks
-
-- **Primary: Track 01, Best Business Workflow.** A security audit is a practical workflow where a person and an agent get real work done together, with a shared conversation, visible progress, and a human decision gate at the end.
-- **Side track, Best Blog:** optional, add the link under [Start here](#start-here) if you publish a write-up of the build.
-- **Side track, Code with Wispr:** open to every submission, but only scored if the Wispr Usage Card is uploaded under Track Details.
-- **Not entering Track 03, Best Core Contribution:** that track requires a pull request to Switch core, and this project is a standalone agent, not a core change.
-
-Confirm the final selection on the submission form before the deadline. You can enter more than one track.
+|  |
+| --- |
+| [How it works](#how-it-works) · [The problem](#the-problem) · [What it is](#what-it-is) · [How we used Switch](#how-we-used-switch) · [Channel setup](#how-the-channel-is-set-up) · [Requirements](#requirements) · [Quickstart](#quickstart) · [Slack](#slack) · [HTTP API](#http-api) · [Configuration](#configuration-reference) · [Sandbox](#sandbox-and-safety-limits) · [Render](#render-deployment) · [Data layout](#data-layout) · [Commands](#useful-commands) · [Switch feedback](#what-we-liked-and-what-we-would-improve) · [Repository layout](#repository-layout) |
 
 ## How it works
 
@@ -111,11 +34,40 @@ progress lines and a full Markdown report posted into the same room
 human confirms findings through the HTTP API
 ```
 
-Stop conditions: the agent asks one clear question when scope or authorization is missing, it never guesses scope, and it never sends attack traffic to live hosts. Findings stay candidates until a human confirms them. A candidate without quoted sandbox evidence is rejected.
+1. **Ask:** mention `@hackclawd` in a Slack channel with the program, scope, and your authorization.
+2. **Route:** Switch forwards the addressed message to an eve session, one per room and thread.
+3. **Hunt:** the `secgin` skill does recon, then dispatches only the hunters whose surface is in scope, at most three at a time. A plain web app gets `web2_hunter` alone, a Solidity repo gets the three contract hunters, an agent framework gets `ai_hunter`.
+4. **Validate:** `validator` tries to reject the combined candidate list, and its rejection reasons are kept for the report.
+5. **Prove:** proof-of-concept code runs only in an Upstash Box against local copies, never against live targets.
+6. **Report:** progress lines and the final report (findings, evidence, reproduction steps) go back to the same room as text and a Markdown file.
+7. **Confirm:** findings stay candidates until a human confirms them through the HTTP API.
+
+Stop conditions: the agent asks one clear question when scope or authorization is missing, it never guesses scope, and it never sends attack traffic to live hosts. A candidate without quoted sandbox evidence is rejected. Results depend on the target, the model, and the scope you supply. A report is a set of candidates, not a guarantee of correctness.
+
+## The problem
+
+Security research is slow to share. A researcher clones a repo, runs tools locally, and pastes results into a ticket. Teammates cannot see the work in progress, cannot redirect it, and cannot tell which findings were actually proven. The person driving the terminal becomes a bottleneck.
+
+hackclawd moves that loop into the chat the team already uses:
+
+- **Who it is for:** enterprise security teams, AppSec engineers, and bug-bounty hunters working on assets they are authorized to test.
+- **What it solves:** it turns an authorized program into a visible, auditable workflow with evidence, instead of a private terminal session and a static document.
+- **Who stays in charge:** a human. The agent never marks a finding confirmed, only a person does that through the HTTP API.
+
+## What it is
+
+| Part | Role | Required |
+| --- | --- | --- |
+| Human in Slack | Posts the program, scope, and authorization, asks follow-ups, confirms findings | Yes |
+| Switch server and Slack bridge | Turns a Slack channel into a room, routes addressed messages, carries replies and files | Yes |
+| hackclawd Eve agent | One durable session per room and thread, owns recon, dispatch, and the final report | Yes |
+| `secgin` skill and six subagents | Recon, specialist hunts, skeptical validation | Yes |
+| Upstash Box sandbox | Runs proofs of concept against local copies with egress restricted | Yes for PoCs, optional for a read-only audit |
+| HTTP API | Start an audit, list reports, confirm a finding | Optional |
+
+The agent is defined in `agent/agent.ts` with the `eve` framework, its behavior in `agent/instructions.md`, and the security workflow in `agent/skills/secgin/`. The model is a Nebius Token Factory model, `moonshotai/Kimi-K2.7-Code` by default, reached through the Vercel AI SDK (`ai` and `@ai-sdk/openai-compatible`).
 
 ## How we used Switch
-
-This is the answer to the "How did you use Switch" section of the form, in detail.
 
 **Which agent did we connect?** Something else: an **Eve agent**, not Claude Code, Codex, LangChain, or Google ADK. `agent/agent.ts` uses `defineAgent` from `eve` 1.0.0-rc.1, and `agent/channels/switch.ts` uses `defineChannel` from `eve/channels`. Switch sees it as `connector_type: "eve"` with `connection_model: "always_on"` and `message_exchange: true`, registered in `src/switch/register.ts`. The model behind the agent is Nebius Token Factory (`moonshotai/Kimi-K2.7-Code` by default), wired in `src/model.ts` through the Vercel AI SDK.
 
@@ -145,23 +97,7 @@ Everything below is real code in this repository. The one-command path is `npm r
 
 Relevant files: `src/switch/protocol.ts` (frame parsing), `src/switch/run-status.ts` (status and resume), `src/switch/target-memory.ts` (per-room target memory), `src/switch/progress.ts` (progress lines), `src/reports/delivery.ts` (report file and header).
 
-## The workflow
-
-What a teammate actually sees, from one message to a confirmed finding:
-
-1. **Ask:** `@hackclawd Audit https://github.com/OWNER/REPO. In scope: the whole repo. I am authorized to test it.`
-2. **Route:** Switch forwards the addressed message to the eve session for that room and thread.
-3. **Hunt:** the `secgin` skill does recon, then dispatches only the hunters whose surface is in scope, at most three at a time. A plain web app gets `web2_hunter` alone, a Solidity repo gets the three contract hunters, an agent framework gets `ai_hunter`.
-4. **Validate:** `validator` tries to reject the combined candidate list, and its rejection reasons are kept for the report.
-5. **Prove:** PoC code runs only in an Upstash Box against local copies, never against live targets.
-6. **Report:** progress lines and the final report (findings, evidence, reproduction steps) go back to the same room as text and a Markdown file.
-7. **Confirm:** findings are candidates until a human confirms them through the HTTP API.
-
-Why this is worth putting in a room instead of a terminal: the whole team sees the same evidence, anyone can redirect the run with a follow-up, and the human decision at the end is explicit. Results depend on the target, the model, and the scope you supply. A report is a set of candidates, not a guarantee of correctness.
-
-## How to run it
-
-### Requirements
+## Requirements
 
 - **Node.js 24+**
 - **Docker Desktop**, running (for the local Switch server)
@@ -169,7 +105,7 @@ Why this is worth putting in a room instead of a terminal: the whole team sees t
 - **Upstash Box API key**, to execute PoCs
 - **Slack app tokens** (`xoxb-` and `xapp-`), to use it from Slack
 
-### Quickstart
+## Quickstart
 
 ```bash
 git clone https://github.com/fozagtx/hackclawd && cd hackclawd && npm ci && cp .env.example .env
@@ -202,7 +138,7 @@ To change a key, edit `.env` and rerun `npm run local`. Stop the Switch server w
 
 Honest limits on a fresh setup: without `SLACK_BOT_TOKEN` and `SLACK_APP_TOKEN`, Slack is not connected but the app still starts. Without `UPSTASH_BOX_API_KEY`, audits run but PoCs cannot execute. A Switch server on your laptop cannot be reached from Render, so a hosted deployment needs a Switch server reachable from the internet.
 
-### Slack
+## Slack
 
 After `npm run local` prints `Connected Slack workspace "..." to Switch`:
 
@@ -214,7 +150,7 @@ After `npm run local` prints `Connected Slack workspace "..." to Switch`:
 
 Follow-ups such as `find a critical there` work because each room remembers its last target. If the process restarts mid-run, the room offers `resume`.
 
-### HTTP API
+## HTTP API
 
 ```bash
 export API_KEY=$(grep ^HACKCLAWD_API_KEY= .env | cut -d= -f2)
@@ -305,8 +241,6 @@ docker compose -p hackclawd-switch down   # stop the local Switch server
 
 ## What we liked and what we would improve
 
-These are the answers we paste into the "What did you like about Switch, and what would you improve?" field. Adjust the wording to your own voice before submitting.
-
 **What worked**
 
 - **Rooms plus the addressed filter.** `filter=addressed` and `payload.addressed` mean one always-on agent serves every channel but only wakes when a human @mentions it. That is what let us build a durable session per room and thread instead of a stateless chatbot, with no per-channel webhook configuration.
@@ -321,16 +255,6 @@ These are the answers we paste into the "What did you like about Switch, and wha
 - **Gateway setup uses an admin cookie.** Addressing policy and bridge connection require `POST /gateway/auth/login` and a session cookie. A scoped setup token with narrow permissions would be easier to automate and safer to keep in CI.
 - **The local stack is heavy for a first demo.** Postgres, `init-db`, `switch-core`, plus optional Mattermost and gateway, with a pinned `SWITCH_VERSION` that has no default. A single-container dev mode or a hosted sandbox would shorten the first run considerably.
 - **Human confirmation needs a second surface.** We added `POST /api/reports/{id}/findings/{findingId}/confirm` because a person has to be the last gate. Structured card actions that report a decision back into the agent session would let a human confirm a finding inside the room instead of curling an endpoint.
-
-## Before you submit
-
-- [ ] Demo video recorded, under 3 minutes, hosted on YouTube or Loom, public or unlisted, and the link added under [Start here](#start-here). It should show the agent working in a real chat with teammates.
-- [ ] The two TODO links under [Start here](#start-here) replaced (demo video, and blog post if you publish one).
-- [ ] Team details filled in on the form for everyone on the team, up to 4 people.
-- [ ] Tracks confirmed on the form: Track 01, plus side tracks if applicable.
-- [ ] Wispr Usage Card uploaded under Track Details if entering Code with Wispr.
-- [x] Repository is public at https://github.com/fozagtx/hackclawd and this README is committed.
-- [ ] `npm test`, `npm run typecheck`, `npm run lint`, and `npm run build` pass.
 
 ## Repository layout
 
